@@ -1,0 +1,11 @@
+slack-bolt==1.18.0
+python-dotenv==1.0.0
+transformers>=4.36.0
+torch>=2.1.2+cu118
+accelerate>=0.25.0
+pytz==2024.1
+protobuf>=4.25.2
+sentencepiece>=0.1.99
+tokenizers>=0.15.0
+aiohttp==3.11.14
+openai>=1.12.0
