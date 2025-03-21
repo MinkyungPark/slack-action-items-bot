@@ -63,6 +63,55 @@ pip install -r requirements.txt
 python app.py
 ```
 
+## 슬랙 API 설정
+
+1. Slack 앱 생성 및 설정
+    - Slack API 웹사이트에서 새 앱을 생성합니다
+    - "Create New App" → "From scratch" 선택
+    - 앱 이름과 워크스페이스 선택
+
+2. 토큰 발급
+
+- 생성된 앱에서 "OAuth & Permissions" 섹션으로 이동
+    - 다음 권한들을 추가해야 합니다:
+        - app_mentions:read
+        - channels:history
+        - channels:join
+        - channels:manage
+        - channels:read
+        - channels:write.invites
+        - chat:write
+        - groups:history
+        - groups:read
+        - groups:write.invites
+        - im:history
+        - im:read
+        - mpim:read
+        - mpim:write
+        - users:read
+- "Bot User OAuth Token" (xoxb-로 시작) 복사
+- "Basic Information" 섹션에서 "App-Level Token" (xapp-로 시작) 생성 및 복사
+- "Event Subscriptions" 섹션 "On"
+    - 아래의 "Subscribe to bot events"에서 "Add Bot User Event", "app_mention"
+- "Socket Mode" 섹션 "On"
+
+3. 환경 변수 설정
+
+- 프로젝트 루트에 .env 파일 생성
+- 다음 내용 추가:
+    ```
+    SLACK_BOT_TOKEN=xoxb-your-bot-token
+    SLACK_APP_TOKEN=xapp-your-app-token
+    ```
+
+4. Slack 워크스페이스에 앱 설치
+
+- "Install to Workspace" 버튼 클릭
+
+5. 채널 설정
+- Slack 워크스페이스에서 #action-items 채널 생성
+- 생성한 앱을 해당 채널에 초대
+
 ## 사용 방법
 
 1. Slack 워크스페이스에 봇을 추가합니다.
