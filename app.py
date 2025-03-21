@@ -171,8 +171,8 @@ def post_action_items(app, action_items, original_channel_id, thread_ts):
         original_message_link = f"<https://app.slack.com/archives/{original_channel_id}/p{thread_ts.replace('.', '')}|원본 대화>"
         
         # 액션 아이템 포스팅
-        message = f"*새로운 액션 아이템이 생성되었습니다*\n"
-        message += f"원본 대화: {original_message_link}\n\n"
+        message = f"* 새로운 액션 아이템이 생성되었습니다 *\n"
+        message += f"📌 원본 대화: {original_message_link}\n\n"
         
         for item in action_items:
             message += f"• {item}\n"

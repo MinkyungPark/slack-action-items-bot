@@ -87,6 +87,13 @@ class ActionItemGenerator:
                         self.logger.warning(f"사용자 정보 조회 실패: {str(e)}")
                         display_name = user
                     
+                    # @이름: 패턴 확인 및 치환
+                    name_pattern = r'@([^:]+):'
+                    if re.search(name_pattern, text):
+                        matched_name = re.search(name_pattern, text).group(1)
+                        text = re.sub(r'@[^:]+:', '', text, 1).strip()
+                        display_name = matched_name
+                    
                     text = re.sub(r'<[^>]+>', '', text)
                     if text.strip():
                         conversation.append(f"{display_name}: {text.strip()}")
@@ -188,7 +195,12 @@ class ActionItemGenerator:
                 if line.startswith("-"):
                     item = line[1:].strip()
                     if item:
-                        action_items.append("@" + item)
+                        # 이름 부분을 *[이름]* 형식으로 변경
+                        name_pattern = r'\[(.*?)\]:'
+                        if re.search(name_pattern, item):
+                            name = re.search(name_pattern, item).group(1)
+                            item = re.sub(r'\[(.*?)\]:', f'@*[{name}]*:', item)
+                        action_items.append(item)
             
             self.logger.info(f"추출된 액션 아이템: {action_items}")
             return action_items
