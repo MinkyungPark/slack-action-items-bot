@@ -56,33 +56,43 @@ action_item_generator = ActionItemGenerator(
 )
 
 def get_channel_id(app, channel_name):
-    """채널 이름으로 채널 ID를 찾음"""
+    """채널 이름으로 채널 ID를 찾음 (public/private 모두 검색)"""
     try:
-        # 채널 목록 조회
-        result = app.client.conversations_list()
+        # 공개 채널 검색
+        result = app.client.conversations_list(types="public_channel")
         for channel in result["channels"]:
             if channel["name"] == channel_name:
                 return channel["id"]
+        
+        # 비공개 채널 검색
+        result = app.client.conversations_list(types="private_channel")
+        for channel in result["channels"]:
+            if channel["name"] == channel_name:
+                return channel["id"]
+                
+        logger.warning(f"채널을 찾을 수 없음: {channel_name}")
         return None
     except Exception as e:
         logger.error(f"채널 ID 조회 중 에러 발생: {str(e)}")
         return None
 
-def join_channels():
-    """봇을 필요한 채널에 참여시킴"""
+def join_channel(channel_id: str):
+    """채널 참여 시도"""
     try:
-        channel_name = "action-items-alarm"
-        # 채널 ID 조회
-        channel_id = get_channel_id(app, channel_name)
-        
-        if channel_id:
-            # 채널 ID로 참여
-            app.client.conversations_join(channel=channel_id)
-            logger.info(f"{channel_name} 채널 참여 완료")
-        else:
-            logger.error(f"{channel_name} 채널을 찾을 수 없습니다.")
+        # 먼저 public 채널 참여 시도
+        app.client.conversations_join(channel=channel_id)
+        logger.info(f"Public 채널 {channel_id} 참여 성공")
     except Exception as e:
-        logger.error(f"채널 참여 중 에러 발생: {str(e)}")
+        try:
+            # public 채널 참여 실패시 private 채널 참여 시도
+            app.client.conversations_invite(
+                channel=channel_id,
+                users=[app.client.auth_test()["user_id"]]
+            )
+            logger.info(f"Private 채널 {channel_id} 참여 성공")
+        except Exception as e:
+            logger.error(f"채널 {channel_id} 참여 실패: {str(e)}")
+            raise
 
 @app.event("app_mention")
 def handle_mention(event, say):
@@ -183,9 +193,18 @@ def handle_message_events(body, logger):
     try:
         event = body["event"]
         if "thread_ts" in event:
+            channel_id = event["channel"]
+            
+            try:
+                # 채널 참여 시도
+                join_channel(channel_id)
+            except Exception as e:
+                logger.error(f"채널 참여 실패: {str(e)}")
+                return
+            
             # 스레드의 메시지 가져오기
             thread_messages = app.client.conversations_replies(
-                channel=event["channel"],
+                channel=channel_id,
                 ts=event["thread_ts"]
             )
             
@@ -195,13 +214,13 @@ def handle_message_events(body, logger):
             if action_items:
                 # 스레드에 액션 아이템 추가
                 app.client.chat_postMessage(
-                    channel=event["channel"],
+                    channel=channel_id,
                     thread_ts=event["thread_ts"],
                     text=f"*액션 아이템 목록:*\n{action_items}"
                 )
             else:
                 app.client.chat_postMessage(
-                    channel=event["channel"],
+                    channel=channel_id,
                     thread_ts=event["thread_ts"],
                     text="액션 아이템을 추출할 수 없습니다."
                 )
@@ -211,8 +230,6 @@ def handle_message_events(body, logger):
 if __name__ == "__main__":
     logger.info("Slack 봇 시작")
     try:
-        # 채널 참여
-        join_channels()
         # Socket Mode 핸들러 시작
         handler = SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"])
         handler.start()
